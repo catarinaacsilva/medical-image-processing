@@ -57,7 +57,7 @@ int main(int argc, char** argv){
     Mat smooth_image_2;
     medianBlur(binary_image, smooth_image_2, 9);
     namedWindow("Averaging Filter 9 x 9 - 1 Iter", WINDOW_AUTOSIZE);
-    imshow( "Averaging Filter 9 x 9 - 1 Iter", smooth_image );
+    imshow( "Averaging Filter 9 x 9 - 1 Iter", smooth_image_2 );
 	waitKey( 0 );
 
     //canny
@@ -69,6 +69,23 @@ int main(int argc, char** argv){
     imshow("Canny", smooth_image_2);
     waitKey(0);
 
+
+    //find contours
+    vector<vector<Point>> contours;
+    vector<Vec4i> hierarchy;
+    findContours(smooth_image_2,contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0));
+    
+    /*// Draw contours
+    Mat drawing = Mat::zeros( smooth_image_2.size(), CV_8UC3 );
+    RNG rng(12345);
+    for( int i = 0; i< contours.size(); i++ ){
+        Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+        drawContours( drawing, contours, (int)i, color, 2, 8, hierarchy, 0, Point() );
+    }
+    namedWindow("Contours", WINDOW_AUTOSIZE);
+    imshow("Contours", drawing);
+    waitKey(0); 
+    */
 
     destroyAllWindows();
     return 0;
