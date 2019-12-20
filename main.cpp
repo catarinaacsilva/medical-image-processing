@@ -1,6 +1,8 @@
 #include <iostream>
 #include "lib_od.h"
 
+
+
 using namespace cv;
 using namespace std;
 
@@ -25,6 +27,33 @@ Mat morph_grad(Mat imageInput){
     Mat image_dest;
     morphologyEx( imageInput, image_dest, MORPH_GRADIENT, structuring_element() );
     return image_dest;
+}
+
+uchar encode(const Point &a, const Point &b) {
+    uchar up    = (a.y > b.y);
+    uchar left  = (a.x > b.x);
+    uchar down  = (a.y < b.y);
+    uchar right = (a.x < b.x);
+    uchar equx  = (a.y == b.y);
+    uchar equy  = (a.x == b.x);
+
+    return (up    && equy)  ? 0 : // N
+           (up    && right) ? 1 : // NE
+           (right && equx)  ? 2 : // E
+           (down  && right) ? 3 : // SE
+           (down  && equy)  ? 4 : // S
+           (left  && down)  ? 5 : // SW
+           (left  && equx)  ? 6 : // W
+                              7 ; // NW
+}
+
+// forward pass
+void chain(const vector<Point> &contour, vector<uchar> &_chain) {
+    int i=0;
+    for (; i<contour.size()-1; i++) {
+        _chain.push_back(encode(contour[i],contour[i+1]));
+    }
+    _chain.push_back(encode(contour[i],contour[0]));
 }
 
 
@@ -116,9 +145,53 @@ int main(int argc, char** argv){
 
 
     //find contours
+    //vector<vector<Point>> contours;
+    //vector<Vec4i> hierarchy;
+    //findContours(image_result, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_NONE, Point(0, 0));
+    //for (auto vec : hierarchy)
+    //    cout << vec << endl;
     vector<vector<Point>> contours;
-    vector<Vec4i> hierarchy;
-    findContours(image_result,contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_NONE, Point(0, 0));
+findContours(image_result, contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
+    
+    for (size_t i=0; i<contours.size(); i++) {
+        vector<uchar> chaincode;
+        std::array<double, 8> hist;
+        chain(contours[i], chaincode);
+        unsigned long total = 0;
+        cout<< "Chain code for Object "<< i<< endl;
+        for (auto vec : chaincode) {
+            cout << static_cast<unsigned>(vec) << endl;
+            hist[vec] ++;
+            total ++;
+        }
+
+        for(int i = 0; i < 8; i++) {
+            hist[i] /= total;
+        }
+
+        cout<< "Chain code Hist for Object "<< i<< endl;
+
+        for (auto vec : hist) {
+            cout << vec << endl;
+        }
+    }
+
+
+    
+
+
+    /*CvMemStorage* storage = cvCreateMemStorage(0) 
+    CvSeq* contours_seq = cvCreateSeq(0,sizeof(CvSeq),sizeof(Point),storage);
+    CvHistogram* hist;
+    //cvCalcPGH(contour_seq, hist);*/
+
+    
+
+
+//vector<vector<Point>> contours;
+//findContours(img, contours, RETR_EXTERNAL, CHAIN_APPROX_NONE); // "dense" contour
+
+
 
 
     //bounding box
