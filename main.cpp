@@ -29,33 +29,6 @@ Mat morph_grad(Mat imageInput){
     return image_dest;
 }
 
-uchar encode(const Point &a, const Point &b) {
-    uchar up    = (a.y > b.y);
-    uchar left  = (a.x > b.x);
-    uchar down  = (a.y < b.y);
-    uchar right = (a.x < b.x);
-    uchar equx  = (a.y == b.y);
-    uchar equy  = (a.x == b.x);
-
-    return (up    && equy)  ? 0 : // N
-           (up    && right) ? 1 : // NE
-           (right && equx)  ? 2 : // E
-           (down  && right) ? 3 : // SE
-           (down  && equy)  ? 4 : // S
-           (left  && down)  ? 5 : // SW
-           (left  && equx)  ? 6 : // W
-                              7 ; // NW
-}
-
-// forward pass
-void chain(const vector<Point> &contour, vector<uchar> &_chain) {
-    int i=0;
-    for (; i<contour.size()-1; i++) {
-        _chain.push_back(encode(contour[i],contour[i+1]));
-    }
-    _chain.push_back(encode(contour[i],contour[0]));
-}
-
 
 int main(int argc, char** argv){
     if( argc != 2 ){
@@ -151,10 +124,12 @@ int main(int argc, char** argv){
     //for (auto vec : hierarchy)
     //    cout << vec << endl;
     vector<vector<Point>> contours;
-findContours(image_result, contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
+    findContours(image_result, contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
     
+    
+    std::vector<Object> objects;
     for (size_t i=0; i<contours.size(); i++) {
-        vector<uchar> chaincode;
+        /*vector<uchar> chaincode;
         std::array<double, 8> hist;
         chain(contours[i], chaincode);
         unsigned long total = 0;
@@ -173,7 +148,10 @@ findContours(image_result, contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
 
         for (auto vec : hist) {
             cout << vec << endl;
-        }
+        }*/
+        cv::Rect r = cv::boundingRect(contours[i]);
+        objects.push_back(Object(r, contours[i]));
+        std::cout << objects[objects.size()-1] << std::endl;
     }
 
 
