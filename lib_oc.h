@@ -13,39 +13,37 @@
 #ifndef OC_H
 #define OC_H
 
-#include <filesystem>
-
 #include "json.hpp"
 #include "lib_od.h"
 
-namespace fs = std::filesystem;
 using json = nlohmann::json;
 
-class ChainHistogram {
+class Features {
   private:
     std::array<double, 8> hist;
-    friend std::ostream& operator<<(std::ostream&, const ChainHistogram&);
+    double circularity;
+    friend std::ostream& operator<<(std::ostream&, const Features&);
 
   public:
-    ChainHistogram(const std::array<double, 8> &);
-    ChainHistogram(const std::vector<cv::Point>&);
-    double distance(const ChainHistogram&, const unsigned int p=2) const;
-    std::array<double, 8> get_histogram() const;
+    Features(const std::array<double, 8> &, const double);
+    Features(const std::vector<cv::Point>&);
+    double distance(const Features&, const unsigned int p=2) const;
+    std::pair<std::array<double, 8>,double> get_features() const;
 };
 
 class KNN {
   private:
-    unsigned int k;
-    std::vector<std::pair<std::string, ChainHistogram>> instances;
+    unsigned int k, d;
+    std::vector<std::pair<std::string, Features>> instances;
     friend std::ostream& operator<<(std::ostream&, const KNN&);
 
   public:
-    KNN(const unsigned int);
-    KNN(const unsigned int, const std::vector<std::pair<std::string, ChainHistogram>>&);
+    KNN(const unsigned int, const unsigned int);
+    KNN(const unsigned int, const unsigned int, const std::vector<std::pair<std::string, Features>>&);
     void learn_class(const std::string&, const std::vector<Object>&);
     std::string predict(const Object&) const;
-    static void store(const KNN&, const fs::path&);
-    static KNN load(const fs::path&);
+    static void store(const KNN&, const std::string&);
+    static KNN load(const std::string&);
 };
 
 #endif

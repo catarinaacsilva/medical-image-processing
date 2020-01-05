@@ -12,6 +12,7 @@ void print_help() {
     <<"Parameters:"<<std::endl
     <<"  -p, the preprocessig method               [default = 0]"<<std::endl
     <<"  -k, the number of nearest neighbors       [default = 1]"<<std::endl
+    <<"  -d, Minkowski distance of order p         [default = 2]"<<std::endl
     <<"  -i, the input folder with images to train [default = './resources/train/']"<<std::endl
     <<"  -o, the output model                      [default = './resources/model/model.json']"<<std::endl
     <<"  -v, verbose"<<std::endl
@@ -20,7 +21,7 @@ void print_help() {
 
 int main(const int argc, const char** argv) {
   argh::parser cmdl;
-  cmdl.add_params({ "-p", "-k", "-i", "-o" }); // batch pre-register multiple params: name + value
+  cmdl.add_params({"-p", "-d", "-k", "-i", "-o"}); // batch pre-register multiple params: name + value
   cmdl.parse(argc, argv);
 
   if (cmdl["-h"]) {
@@ -50,7 +51,15 @@ int main(const int argc, const char** argv) {
   }
   std::cout<<"K = "<<k<<std::endl;
 
-  auto model = KNN(k);
+  unsigned int d = 2;
+  if (cmdl("-d")) {
+    std::string value;
+    cmdl("-d") >> value;
+    d = std::atoi(value.c_str());
+  }
+  std::cout<<"D = "<<d<<std::endl;
+
+  auto model = KNN(k, d);
   auto classes = get_directories(input);
   for (auto c: classes) {
     std::cout <<"Learn the following class: "<< c.filename().c_str() << std::endl;
@@ -58,7 +67,7 @@ int main(const int argc, const char** argv) {
     std::vector<Object> instances;
     for (auto f: files) {
       std::cout<<"File: "<<f<<std::endl;
-      auto objects = std::get<0>(get_objects(pre, f, cmdl["-v"]));
+      auto objects = (get_objects(pre, f, cmdl["-v"])).first;
       auto object = *std::max_element(std::begin(objects), std::end(objects));
       std::cout<<"Object = "<<object<<std::endl;
       instances.push_back(object);

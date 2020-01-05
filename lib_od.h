@@ -15,15 +15,11 @@
 
 #include <iostream>
 #include <iomanip>
-#include <filesystem>
-#include <tuple>
 
 #include "opencv2/core/core.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/core/types_c.h"
-
-namespace fs = std::filesystem;
 
 class Object {
   private:
@@ -41,9 +37,10 @@ class Object {
 
 void show_image(const cv::Mat&, const std::string&);
 
+void show_images(const cv::Mat&, const cv::Mat&, const std::string&);
+
 std::vector<unsigned char> chain(const std::vector<cv::Point>&);
 
-std::tuple<std::vector<Object>, cv::Mat, cv::Mat>
-get_objects(const unsigned int, const fs::path&, const bool verbose=false);
+std::pair<std::vector<Object>, cv::Mat> get_objects(const unsigned int, const std::string&, const bool verbose=false);
 
 #endif

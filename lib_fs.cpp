@@ -1,5 +1,7 @@
 #include "lib_fs.h"
 
+#include<algorithm>
+
 std::vector<fs::path> get_directories(const fs::path& p)
 {
   std::vector<fs::path> rv;
@@ -8,6 +10,7 @@ std::vector<fs::path> get_directories(const fs::path& p)
       rv.push_back(p.path());
     }
   }
+  std::reverse(std::begin(rv), std::end(rv));
   return rv;
 }
 
@@ -17,5 +20,6 @@ std::vector<std::filesystem::path> get_files(const fs::path& p)
   for(auto& p : std::filesystem::directory_iterator(p)) {
     rv.push_back(p.path());
   }
+  std::reverse(std::begin(rv), std::end(rv));
   return rv;
 }

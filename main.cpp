@@ -51,15 +51,14 @@ int main(const int argc, const char** argv) {
   auto files = get_files(input);
   for (auto f: files) {
     std::cout<<"File: "<<f<<std::endl;
-    auto tuple = get_objects(pre, f, cmdl["-v"]);
-    auto objects = std::get<0>(tuple);
-    auto originalImage = std::get<1>(tuple);
-    auto edges = std::get<2>(tuple);
+    auto pair = get_objects(pre, f, cmdl["-v"]);
+    auto objects = pair.first;
+    auto originalImage = pair.second;
 
-    cv::Mat drawing = cv::Mat::zeros(edges.size(), CV_8UC3);
+    cv::Mat drawing = cv::Mat::zeros(originalImage.size(), CV_8UC3);
     for(size_t i = 0; i < objects.size(); i++) {
       auto label = model.predict(objects[i]);
-      std::cout<<"Label = "<<label<<std::endl;
+      //std::cout<<"Label = "<<label<<std::endl;
       auto color = cv::Scalar(0,256,0);
       if(label.compare("good")) {
         color = cv::Scalar(0,0,256);
@@ -71,22 +70,9 @@ int main(const int argc, const char** argv) {
       cv::rectangle(drawing, boundRect.tl(), boundRect.br(), color, 2);
     }
 
-    show_image(drawing, "Detection");
+    show_images(originalImage, drawing, "Detection");
     cv::destroyAllWindows();
   }
-
-
-  /*// Smooth image --> morphological operations - opening
-    Mat smooth_image_op;
-    namedWindow("opening", WINDOW_AUTOSIZE);
-    imshow( "opening", morph_opening(originalImage));
-    waitKey( 0 );
-
-  //grad morph
-  Mat element = structuring_element();
-  namedWindow("grad", WINDOW_AUTOSIZE);
-  imshow("grad", morph_grad(smooth_image_2));
-  waitKey(0);*/
-
+  
   return EXIT_SUCCESS;
 }
