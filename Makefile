@@ -1,7 +1,5 @@
 CC = g++
-CFLAGS = -g -Wall
-
-TARGET := main
+CFLAGS = -g -Wall -O2 -std=c++17 -pipe
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(SRCS))
@@ -9,15 +7,21 @@ OBJS := $(patsubst %.cpp,%.o,$(SRCS))
 OPENCV = `pkg-config opencv4 --cflags --libs`
 LIBS = $(OPENCV)
 
-all: $(TARGET)
+.PHONY: all clean
 
-$(TARGET): $(OBJS)
+all: main train
+
+main: main.o lib_od.o lib_oc.o lib_fs.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+
+train: train.o lib_od.o lib_oc.o lib_fs.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< $(LIBS)
 
-clean:
-	rm -rf $(TARGET) *.o
+docs: %.cpp %.h %.hpp Doxyfile
+	doxygen Doxyfile
 
-.PHONY: all clean
+clean:
+	rm -rf main train *.o documentation
