@@ -18,6 +18,22 @@ unsigned char encode(const cv::Point &a, const cv::Point &b) {
     7 ; // NW
 }
 
+cv::Mat morphological_reconstruction(cv::Mat image, cv::Mat mask, cv::Mat kernel){
+  cv::Mat imageRec = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1), 
+  imageResult = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1), 
+  imageDilate = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1);;
+  mask.copyTo(imageRec(cv::Rect(0, 0, mask.size().width, mask.size().height)));
+  bool eq = false;
+  do{
+    imageRec.copyTo(imageResult(cv::Rect(0, 0, imageRec.size().width, imageRec.size().height)));
+    cv::morphologyEx(imageResult, imageDilate, cv::MORPH_DILATE, kernel);
+    cv::min(image, imageDilate, imageRec);
+    cv::Mat diff = imageRec != imageResult;
+    eq = cv::countNonZero(diff) == 0;
+  }while(!eq);
+  return imageResult;
+}
+
 std::vector<unsigned char> chain(const std::vector<cv::Point> &contour) {
   std::vector<unsigned char> rv;
   size_t i = 0;
@@ -94,25 +110,54 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
   unsigned int high_thresh = (unsigned int)cv::threshold(smooth_image, binary_image, 0, 255, cv::THRESH_OTSU),
   low_thresh = 0;
 
+  cv::bitwise_not(binary_image, binary_image);
   if(verbose) {
     show_image(binary_image, "Threshold Otsu");
   }
 
+  //vários kernel para teste!
   auto kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(9, 9));
-
-  cv::morphologyEx(binary_image, smooth_image, cv::MORPH_OPEN, kernel);
-  cv::morphologyEx(smooth_image, smooth_image, cv::MORPH_CLOSE, kernel);
-
+  auto kernel_erode = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(31, 31));
+  auto kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(23, 23));
+  auto kernel_close_2 = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));
+  auto kernel_rec = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(23, 23));
+  auto kernel_open = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(45, 45));
+  //cv::morphologyEx(binary_image, smooth_image, cv::MORPH_OPEN, kernel);
+  //cv::morphologyEx(smooth_image, smooth_image, cv::MORPH_CLOSE, kernel);
+  
+  //RECONSTRUÇÃO MORFOLÓGICA
+  cv::morphologyEx(binary_image, binary_image, cv::MORPH_CLOSE, kernel_close);
   if(verbose) {
-    show_image(smooth_image, "Morph CLOSE + OPEN");
+    show_image(binary_image, "original");
   }
 
+  cv::morphologyEx(binary_image, binary_image, cv::MORPH_OPEN, kernel_open);
+  if(verbose) {
+    show_image(binary_image, "open");
+  }
+  
+  cv::morphologyEx(binary_image, smooth_image, cv::MORPH_ERODE, kernel_erode);
+  if(verbose) {
+    show_image(smooth_image, "erosao");
+  }
+
+  smooth_image = morphological_reconstruction(binary_image, smooth_image, kernel_rec);
+  if(verbose) {
+    show_image(smooth_image, "morph rec");
+  }
+
+  cv::morphologyEx(smooth_image, smooth_image, cv::MORPH_CLOSE, kernel_close_2);
+  if(verbose) {
+    show_image(smooth_image, "close");
+  }
+
+
   // After binarization is necessary reduce noise, again
-  medianBlur(smooth_image, smooth_image, 9);
+  /*medianBlur(smooth_image, smooth_image, 9);
 
   if(verbose) {
     show_image(smooth_image, "Averaging Filter 9 x 9 - 2 Iter");
-  }
+  }*/
 
   cv::Mat edges;
   switch(pre){
