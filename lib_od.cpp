@@ -221,3 +221,10 @@ std::vector<cv::Point> Object::get_contour() const {
 cv::Rect Object::get_boundRect() const {
   return boundRect;
 }
+
+void imfill(cv::Mat& src, cv::Mat& dst, cv::Point& seed = cv::Point(0,0)) const {
+  cv::Mat edges_neg = src.clone();
+  cv::floodFill(edges_neg, seed, CV_RGB(255,255,255));
+  bitwise_not(edges_neg, edges_neg);
+  dst = (edges_neg | src);
+}

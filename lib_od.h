@@ -43,4 +43,15 @@ std::vector<unsigned char> chain(const std::vector<cv::Point>&);
 
 std::pair<std::vector<Object>, cv::Mat> get_objects(const unsigned int, const std::string&, const bool verbose=false);
 
+/**
+ * A simple implementation of the imfill image of Matlab.
+ * According to the documentation, the function fills holes in the binary image src.
+ * A hole is a set of background pixels that cannot be reached by filling in the background from the edge of the image.
+ *
+ * @param src source image
+ * @param dst destination image
+ * @param seed seed point to the backgound (by default [0,0])
+ */
+void imfill(cv::Mat&, cv::Mat&, cv::Point&);
+
 #endif
