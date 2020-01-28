@@ -1,5 +1,7 @@
 #include "lib_od.h"
 
+static cv::Point SEED_ZERO = cv::Point(0,0);
+
 unsigned char encode(const cv::Point &a, const cv::Point &b) {
   uchar up    = (a.y > b.y);
   uchar left  = (a.x > b.x);
@@ -16,6 +18,13 @@ unsigned char encode(const cv::Point &a, const cv::Point &b) {
     (left  && down)  ? 5 : // SW
     (left  && equx)  ? 6 : // W
     7 ; // NW
+}
+
+void imfill(cv::Mat& src, cv::Mat& dst, cv::Point& seed = SEED_ZERO) {
+  cv::Mat edges_neg = src.clone();
+  cv::floodFill(edges_neg, seed, CV_RGB(255,255,255));
+  bitwise_not(edges_neg, edges_neg);
+  dst = (edges_neg | src);
 }
 
 cv::Mat morphological_reconstruction(cv::Mat image, cv::Mat mask, cv::Mat kernel){
@@ -126,7 +135,7 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
   //cv::morphologyEx(smooth_image, smooth_image, cv::MORPH_CLOSE, kernel);
   
   //RECONSTRUÇÃO MORFOLÓGICA
-  cv::morphologyEx(binary_image, binary_image, cv::MORPH_CLOSE, kernel_close);
+  /*cv::morphologyEx(binary_image, binary_image, cv::MORPH_CLOSE, kernel_close);
   if(verbose) {
     show_image(binary_image, "original");
   }
@@ -134,6 +143,12 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
   cv::morphologyEx(binary_image, binary_image, cv::MORPH_OPEN, kernel_open);
   if(verbose) {
     show_image(binary_image, "open");
+  }*/
+
+  // fill some parts of original image
+  imfill(binary_image, binary_image); 
+  if(verbose){
+    show_image(binary_image, "original");
   }
   
   cv::morphologyEx(binary_image, smooth_image, cv::MORPH_ERODE, kernel_erode);
@@ -222,9 +237,3 @@ cv::Rect Object::get_boundRect() const {
   return boundRect;
 }
 
-void imfill(cv::Mat& src, cv::Mat& dst, cv::Point& seed = cv::Point(0,0)) const {
-  cv::Mat edges_neg = src.clone();
-  cv::floodFill(edges_neg, seed, CV_RGB(255,255,255));
-  bitwise_not(edges_neg, edges_neg);
-  dst = (edges_neg | src);
-}
