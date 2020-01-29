@@ -27,29 +27,48 @@ void imfill(cv::Mat& src, cv::Mat& dst, cv::Point& seed = SEED_ZERO) {
   dst = (edges_neg | src);
 }
 
-cv::Mat watershed(cv::Mat image_input){
+/*cv::Mat watershed(cv::Mat image_input){
   cv::Mat imageResult = cv::Mat::zeros(cv::Size(image_input.size().width, image_input.size().height), CV_8UC1);
   // Perform the distance transform algorithm
-  cv::Mat dist;
-  distanceTransform(image_input, dist, cv::DIST_L2, 3);
+  cv::Mat dist = cv::Mat::zeros(cv::Size(image_input.size().width, image_input.size().height), CV_8UC1);
+  distanceTransform(image_input, dist, cv::DIST_L1, 3, CV_8UC1); //Output image is single-channel image of the same size as src
   normalize(dist, dist, 0, 1.0, cv::NORM_MINMAX);
   // Threshold to obtain the peaks; This will be the markers for the foreground objects
   threshold(dist, dist, 0.4, 1.0, cv::THRESH_BINARY);
   // Dilate a bit the dist image
-  cv::Mat kernel1 = cv::Mat::ones(3, 3, CV_8U);
+  cv::Mat kernel1 = cv::Mat::ones(3, 3, CV_8UC3);
   dilate(dist, dist, kernel1);
   // Create the CV_8U version of the distance image; It is needed for findContours()
-  cv::Mat dist_8u;
-  dist.convertTo(dist_8u, CV_8U);
+  //cv::Mat dist_8u;
+  //dist.convertTo(dist_8u, CV_8UC3);
   // Find total markers
   std::vector<std::vector<cv::Point>> contours;
-  findContours(dist_8u, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+  findContours(dist, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
   // Create the marker image for the watershed algorithm
-  cv::Mat markers = cv::Mat::zeros(dist.size(), CV_32S);
+  
+  cv::Mat markers = cv::Mat::zeros(dist.size(), CV_8UC1);
   // Perform the watershed algorithm
   watershed(imageResult, markers);
   return imageResult;
 }  
+*/
+
+cv::Mat watershed(cv::Mat img){
+  cv::Mat img0, imgGray, markerMask;
+  img0.copyTo(img);
+  cvtColor(img, markerMask, cv::COLOR_BGR2GRAY);
+  cvtColor(markerMask, imgGray, cv::COLOR_GRAY2BGR);
+  markerMask = cv::Scalar::all(0);
+
+  std::vector<std::vector<cv::Point>> contours;
+  std::vector<cv::Vec4i> hierarchy;
+  cv::findContours(markerMask, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_NONE);
+  cv::Mat markers(markerMask.size(), CV_32S);
+  markers = cv::Scalar::all(0);
+  watershed( img0, markers );
+  return img0;
+}
+
 
 cv::Mat morphological_reconstruction(cv::Mat image, cv::Mat mask, cv::Mat kernel){
   cv::Mat imageRec = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1), 
@@ -175,6 +194,10 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
     show_image(binary_image, "original");
   }
 
+  binary_image = watershed(binary_image);
+  if(verbose){
+    show_image(binary_image, "watershed");
+  }
 
   cv::morphologyEx(binary_image, smooth_image, cv::MORPH_ERODE, kernel_erode);
   if(verbose) {
@@ -231,6 +254,7 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
     objects.push_back(Object(contours[i]));
     //std::cout << objects[objects.size()-1] << std::endl;
   }
+
 
   if(verbose) {
     cv::destroyAllWindows();
