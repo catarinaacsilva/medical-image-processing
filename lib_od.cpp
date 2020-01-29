@@ -27,6 +27,30 @@ void imfill(cv::Mat& src, cv::Mat& dst, cv::Point& seed = SEED_ZERO) {
   dst = (edges_neg | src);
 }
 
+cv::Mat watershed(cv::Mat image_input){
+  cv::Mat imageResult = cv::Mat::zeros(cv::Size(image_input.size().width, image_input.size().height), CV_8UC1);
+  // Perform the distance transform algorithm
+  cv::Mat dist;
+  distanceTransform(image_input, dist, cv::DIST_L2, 3);
+  normalize(dist, dist, 0, 1.0, cv::NORM_MINMAX);
+  // Threshold to obtain the peaks; This will be the markers for the foreground objects
+  threshold(dist, dist, 0.4, 1.0, cv::THRESH_BINARY);
+  // Dilate a bit the dist image
+  cv::Mat kernel1 = cv::Mat::ones(3, 3, CV_8U);
+  dilate(dist, dist, kernel1);
+  // Create the CV_8U version of the distance image; It is needed for findContours()
+  cv::Mat dist_8u;
+  dist.convertTo(dist_8u, CV_8U);
+  // Find total markers
+  std::vector<std::vector<cv::Point>> contours;
+  findContours(dist_8u, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+  // Create the marker image for the watershed algorithm
+  cv::Mat markers = cv::Mat::zeros(dist.size(), CV_32S);
+  // Perform the watershed algorithm
+  watershed(imageResult, markers);
+  return imageResult;
+}  
+
 cv::Mat morphological_reconstruction(cv::Mat image, cv::Mat mask, cv::Mat kernel){
   cv::Mat imageRec = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1), 
   imageResult = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1), 
@@ -150,7 +174,8 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
   if(verbose){
     show_image(binary_image, "original");
   }
-  
+
+
   cv::morphologyEx(binary_image, smooth_image, cv::MORPH_ERODE, kernel_erode);
   if(verbose) {
     show_image(smooth_image, "erosao");
@@ -161,10 +186,10 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
     show_image(smooth_image, "morph rec");
   }
 
-  cv::morphologyEx(smooth_image, smooth_image, cv::MORPH_CLOSE, kernel_close_2);
+  /*cv::morphologyEx(smooth_image, smooth_image, cv::MORPH_CLOSE, kernel_close_2);
   if(verbose) {
     show_image(smooth_image, "close");
-  }
+  }*/
 
 
   // After binarization is necessary reduce noise, again
