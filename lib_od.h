@@ -52,6 +52,29 @@ std::pair<std::vector<Object>, cv::Mat> get_objects(const unsigned int, const st
  * @param dst destination image
  * @param seed seed point to the backgound (by default [0,0])
  */
-void imfill(cv::Mat&, cv::Mat&, cv::Point&);
+void imfill(cv::Mat& src, cv::Mat& dst, cv::Point& seed);
+
+/**
+ * A simple implementation of the imfill image of Matlab.
+ * According to the documentation, the function fills holes in the binary image src.
+ * A hole is a set of background pixels that cannot be reached by filling in the background from the edge of the image.
+ * This function does not need a seed point, it will find the first black point on the background.
+ *
+ * @param src source image
+ * @param dst destination image
+ * @param seed seed point to the backgound (by default [0,0])
+ */
+void imfill(cv::Mat& src, cv::Mat& dst);
+
+/**
+ * A simple implementation of morphological reconstruction, based on this code:
+ * https://stackoverflow.com/questions/29104091/morphological-reconstruction-in-opencv
+ *
+ * @param in input image
+ * @param mask mask that identifies the seeds for the objects to keep
+ * @param kernel kernel used in the morphological operations
+ * @param out output image
+ */
+void morphological_reconstruction(cv::Mat& in, cv::Mat& mask, cv::Mat& kernel, cv::Mat& out);
 
 #endif

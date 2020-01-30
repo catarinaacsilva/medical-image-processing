@@ -1,7 +1,5 @@
 #include "lib_od.h"
 
-static cv::Point SEED_ZERO = cv::Point(0,0);
-
 unsigned char encode(const cv::Point &a, const cv::Point &b) {
   uchar up    = (a.y > b.y);
   uchar left  = (a.x > b.x);
@@ -20,42 +18,32 @@ unsigned char encode(const cv::Point &a, const cv::Point &b) {
     7 ; // NW
 }
 
-void imfill(cv::Mat& src, cv::Mat& dst, cv::Point& seed = SEED_ZERO) {
+void imfill(cv::Mat& src, cv::Mat& dst) {
+  cv::Point seed;
+  bool done = false;
+  // Search for the first black pixel in a BW image
+  for (auto i = 0; i < src.size().width && !done; i++) {
+    for(auto j = 0; j < src.size().height && !done; j++) {
+      if(src.at<uchar>(i,j) == 0) {
+        // The first black pixel will be select as the seed for the imfill
+        seed = cv::Point(i,j);
+        done = true;
+      }
+    }
+  }
+  imfill(src, dst, seed);
+}
+
+void imfill(cv::Mat& src, cv::Mat& dst, cv::Point& seed) {
   cv::Mat edges_neg = src.clone();
   cv::floodFill(edges_neg, seed, CV_RGB(255,255,255));
   bitwise_not(edges_neg, edges_neg);
   dst = (edges_neg | src);
 }
 
-/*cv::Mat watershed(cv::Mat image_input){
-  cv::Mat imageResult = cv::Mat::zeros(cv::Size(image_input.size().width, image_input.size().height), CV_8UC1);
-  // Perform the distance transform algorithm
-  cv::Mat dist = cv::Mat::zeros(cv::Size(image_input.size().width, image_input.size().height), CV_8UC1);
-  distanceTransform(image_input, dist, cv::DIST_L1, 3, CV_8UC1); //Output image is single-channel image of the same size as src
-  normalize(dist, dist, 0, 1.0, cv::NORM_MINMAX);
-  // Threshold to obtain the peaks; This will be the markers for the foreground objects
-  threshold(dist, dist, 0.4, 1.0, cv::THRESH_BINARY);
-  // Dilate a bit the dist image
-  cv::Mat kernel1 = cv::Mat::ones(3, 3, CV_8UC3);
-  dilate(dist, dist, kernel1);
-  // Create the CV_8U version of the distance image; It is needed for findContours()
-  //cv::Mat dist_8u;
-  //dist.convertTo(dist_8u, CV_8UC3);
-  // Find total markers
-  std::vector<std::vector<cv::Point>> contours;
-  findContours(dist, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-  // Create the marker image for the watershed algorithm
-  
-  cv::Mat markers = cv::Mat::zeros(dist.size(), CV_8UC1);
-  // Perform the watershed algorithm
-  watershed(imageResult, markers);
-  return imageResult;
-}  
-*/
-
-cv::Mat watershed(cv::Mat img){
-  cv::Mat img0, imgGray, markerMask;
-  img0.copyTo(img);
+/*void watershed(cv::Mat& in, cv::Mat& out){
+  cv::Mat img, img_gray, markerMask;
+  in.copyTo(img);
   cvtColor(img, markerMask, cv::COLOR_BGR2GRAY);
   cvtColor(markerMask, imgGray, cv::COLOR_GRAY2BGR);
   markerMask = cv::Scalar::all(0);
@@ -65,25 +53,22 @@ cv::Mat watershed(cv::Mat img){
   cv::findContours(markerMask, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_NONE);
   cv::Mat markers(markerMask.size(), CV_32S);
   markers = cv::Scalar::all(0);
-  watershed( img0, markers );
+  watershed(img0, markers );
   return img0;
-}
+}*/
 
-
-cv::Mat morphological_reconstruction(cv::Mat image, cv::Mat mask, cv::Mat kernel){
-  cv::Mat imageRec = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1), 
-  imageResult = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1), 
-  imageDilate = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1);;
-  mask.copyTo(imageRec(cv::Rect(0, 0, mask.size().width, mask.size().height)));
+void morphological_reconstruction(cv::Mat& in, cv::Mat& mask, cv::Mat& kernel, cv::Mat& out) {
+  cv::Mat img_rec = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1),
+  img_dilate = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1);
+  mask.copyTo(img_rec);
   bool eq = false;
   do{
-    imageRec.copyTo(imageResult(cv::Rect(0, 0, imageRec.size().width, imageRec.size().height)));
-    cv::morphologyEx(imageResult, imageDilate, cv::MORPH_DILATE, kernel);
-    cv::min(image, imageDilate, imageRec);
-    cv::Mat diff = imageRec != imageResult;
+    img_rec.copyTo(out(cv::Rect(0, 0, img_rec.size().width, img_rec.size().height)));
+    cv::morphologyEx(out, img_dilate, cv::MORPH_DILATE, kernel);
+    cv::min(in, img_dilate, img_rec);
+    cv::Mat diff = img_rec != out;
     eq = cv::countNonZero(diff) == 0;
   }while(!eq);
-  return imageResult;
 }
 
 std::vector<unsigned char> chain(const std::vector<cv::Point> &contour) {
@@ -172,7 +157,7 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
   auto kernel_erode = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(31, 31));
   auto kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(23, 23));
   auto kernel_close_2 = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));
-  auto kernel_rec = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(23, 23));
+  auto kernel_rec = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
   auto kernel_open = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(45, 45));
   //cv::morphologyEx(binary_image, smooth_image, cv::MORPH_OPEN, kernel);
   //cv::morphologyEx(smooth_image, smooth_image, cv::MORPH_CLOSE, kernel);
@@ -194,17 +179,17 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
     show_image(binary_image, "original");
   }
 
-  binary_image = watershed(binary_image);
+  /*binary_image = watershed(binary_image);
   if(verbose){
     show_image(binary_image, "watershed");
-  }
+  }*/
 
   cv::morphologyEx(binary_image, smooth_image, cv::MORPH_ERODE, kernel_erode);
   if(verbose) {
     show_image(smooth_image, "erosao");
   }
 
-  smooth_image = morphological_reconstruction(binary_image, smooth_image, kernel_rec);
+  morphological_reconstruction(binary_image, smooth_image, kernel_rec, smooth_image);
   if(verbose) {
     show_image(smooth_image, "morph rec");
   }

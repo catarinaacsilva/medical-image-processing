@@ -10,7 +10,7 @@ std::vector<fs::path> get_directories(const fs::path& p)
       rv.push_back(p.path());
     }
   }
-  std::reverse(std::begin(rv), std::end(rv));
+  std::sort(std::begin(rv), std::end(rv));
   return rv;
 }
 
@@ -20,6 +20,6 @@ std::vector<std::filesystem::path> get_files(const fs::path& p)
   for(auto& p : std::filesystem::directory_iterator(p)) {
     rv.push_back(p.path());
   }
-  std::reverse(std::begin(rv), std::end(rv));
+  std::sort(std::begin(rv), std::end(rv));
   return rv;
 }
