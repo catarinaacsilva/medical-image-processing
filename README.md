@@ -93,3 +93,30 @@ Parameters:
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+
+
+shif
+nao morfologica (hibrido)
+descritores sift (forma)
+
+
+clustering
+
+problema???
+
+datasets anotados
+
+oncologia hematologica
+
+margens de erro
+ erro 10% signif
+
+distribuiçao das dimensoes
+
+saber se são sedimentos
+
+ligar opencv ao micros
+
+
+
+

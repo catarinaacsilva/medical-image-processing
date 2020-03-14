@@ -42,40 +42,6 @@ void imfill(cv::Mat& src, cv::Mat& dst, cv::Point& seed) {
 }
 
 
-// PRIMEIRA IMPLEMENTAÇÃO QUE DIFERE DA SEGUNDA POR COLOCAR MARKERMASK= EDGES
-//markerMask -> image gray  
-//edges -> findContours
-cv::Mat watershed_aux(cv::Mat markerMask, cv::Mat edges){
-  cv::Mat markers(markerMask.size(), CV_32S);
-  cv::Mat original_image;
-  cvtColor(markerMask, original_image, cv::COLOR_GRAY2BGR);
-  watershed(original_image, markers);
-  cv::Mat wshed(markers.size(), CV_8UC3);
-  wshed = wshed*0.5+original_image*0.5;
-  return wshed;
-}
-/*
-
-// SEGUNDA IMPLEMENTAÇÃO QUE SUPOSTAMENTE ESTA MAIS CORRETA MAS DA ERROS
-/*
-WATERSHED:
-  - original_image: gray imagem that results of canny but with 3 channels
-  - markers: results of markersMask (findContours)
-  - markermask: image result of canny (gray) - 1 channel = edges of findContours
-*/
-/*cv::Mat watershed_aux(cv::Mat markerMask, cv::Mat edges){
-  cv::Mat original_image = cv::Mat::zeros(cv::Size(markerMask.size().width, markerMask.size().height), CV_8UC3);
-  // Convert the image with 1 channel to 2 channels: result of canny to other image. This image will be the input of watershed function
-  cvtColor(original_image, markerMask, cv::COLOR_GRAY2BGR);
-  //It's necessary to obtain the result of findContours but it isn't implemented here.
-  markerMask = edges;
-  cv::Mat markers(markerMask.size(), CV_32S);
-  watershed(original_image, markers);
-  cv::Mat wshed(markers.size(), CV_8UC3);
-  wshed = wshed*0.5 + original_image*0.5;
-  return wshed;
-}*/
-
 void morphological_reconstruction(cv::Mat& in, cv::Mat& mask, cv::Mat& kernel, cv::Mat& out) {
   cv::Mat img_rec = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1),
   img_dilate = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1);
@@ -198,11 +164,6 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
     show_image(binary_image, "original");
   }
 
-  /*binary_image = watershed(binary_image);
-  if(verbose){
-    show_image(binary_image, "watershed");
-  }*/
-
   cv::morphologyEx(binary_image, smooth_image, cv::MORPH_ERODE, kernel_erode);
   if(verbose) {
     show_image(smooth_image, "erosao");
@@ -250,12 +211,8 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
     break;
   }
 
-  cv::Mat image_gray = edges;
-
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(edges, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
-
-  cv::Mat w = watershed_aux(image_gray, edges);
   
 
   std::vector<Object> objects;
