@@ -39,7 +39,18 @@ class Features {
     double get_extent() const;
 };
 
-class KNN {
+class ML {
+  public:
+    virtual void learn(const std::vector<std::pair<std::string, Features>>&) = 0;
+    virtual std::string predict(const Object&) const = 0;
+    virtual void store(const std::string&) const = 0;
+    
+    static ML& load(const std::string&);
+
+    friend std::ostream& operator<<(std::ostream&, const ML&);
+};
+
+class KNN : public ML {
   private:
     unsigned int k, d;
     std::vector<std::pair<std::string, Features>> instances;
@@ -48,23 +59,28 @@ class KNN {
   public:
     KNN(const unsigned int, const unsigned int);
     KNN(const unsigned int, const unsigned int, const std::vector<std::pair<std::string, Features>>&);
+    
     void learn(const std::vector<std::pair<std::string, Features>>&);
     std::string predict(const Object&) const;
     void store(const std::string&) const;
-    static KNN load(const std::string&);
+    
+    static KNN& load(const json&);
 };
 
-class LR {
+class LR : public ML {
   private:
     std::vector<double> parameters;
     friend std::ostream& operator<<(std::ostream&, const LR&);
+  
   public:
     LR();
     LR(const std::vector<double> parameters);
-    void learn(const std::vector<std::pair<std::string, Features>>&, const double alpha=0.01, const double beta=0.1);
+    
+    void learn(const std::vector<std::pair<std::string, Features>>&);
     std::string predict(const Object&) const;
     void store(const std::string&) const;
-    static LR load(const std::string&);
+    
+    static LR& load(const json&);
 };
 
 #endif

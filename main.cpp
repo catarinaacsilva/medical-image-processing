@@ -45,8 +45,8 @@ int main(const int argc, const char** argv) {
     cmdl("-m") >> model_path;
   }
   std::cout<<"Model: "<<model_path<<std::endl;
-  auto model = LR::load(model_path);
-  std::cout<<model<<std::endl;
+  ML& model = ML::load(model_path);
+  //std::cout<<model<<std::endl;
 
   auto files = get_files(input);
   for (auto f: files) {
@@ -56,12 +56,16 @@ int main(const int argc, const char** argv) {
     auto originalImage = pair.second;
 
     cv::Mat drawing = cv::Mat::zeros(originalImage.size(), CV_8UC3);
+    double good = 0, bad = 0;
     for(size_t i = 0; i < objects.size(); i++) {
       auto label = model.predict(objects[i]);
       //std::cout<<"Label = "<<label<<std::endl;
       auto color = cv::Scalar(0,256,0);
       if(label.compare("good")) {
+        ++good;
         color = cv::Scalar(0,0,256);
+      } else {
+        ++bad;
       }
       auto boundRect = objects[i].get_boundRect();
       std::vector<std::vector<cv::Point>> contours;
@@ -70,6 +74,7 @@ int main(const int argc, const char** argv) {
       cv::rectangle(drawing, boundRect.tl(), boundRect.br(), color, 2);
     }
 
+    std::cout<<"Acanthocytes = "<<bad<<"/"<<(bad+good)<<std::endl;
     show_images(originalImage, drawing, "Detection");
     cv::destroyAllWindows();
   }

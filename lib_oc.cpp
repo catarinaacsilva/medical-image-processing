@@ -22,7 +22,11 @@ double sigmoid(const double x) {
 }
 
 double dot_product(const std::vector<double> a0, const std::vector<double> a1) {
-
+  double res = 0.0;
+  for(size_t i = 0; i < a0.size(); i++) {
+    res += a0[i] * a1[i];
+  }
+  return res;
 }
 
 Features::Features(const std::array<double, 8> &_hist, const double _circularity,
@@ -91,7 +95,6 @@ std::vector<double> Features::get_features() const {
   for(auto h: hist) {
     res.push_back(h);
   }
-  //std::copy(hist.begin(), hist.end(), res.begin()+1);
   res.push_back(circularity);
   res.push_back(convex);
   res.push_back(aspect_ratio);
@@ -120,8 +123,8 @@ double Features::get_extent() const {
 }
 
 std::ostream& operator<<(std::ostream &strm, const Features &o) {
-  strm << "{'convex':"<<o.convex<<", 'circularity':"<<o.circularity<<
-  ", 'aspect_ratio':"<<o.aspect_ratio<<", 'extent':"<<o.extent<<", 'h':[";
+  strm << "{'convex':"<<o.convex<<",'circularity':"<<o.circularity<<
+  ",'aspect_ratio':"<<o.aspect_ratio<<",'extent':"<<o.extent<<",'h':[";
   for(size_t i = 0; i < o.hist.size(); ++i) {
     strm << std::fixed << std:: setprecision(2) << o.hist[i];
     if (i != o.hist.size() - 1) {
@@ -130,6 +133,20 @@ std::ostream& operator<<(std::ostream &strm, const Features &o) {
   }
   strm << "]}";
   return strm;
+}
+
+ML& ML::load(const std::string& path) {
+  std::ifstream i(path);
+  json j;
+  i >> j;
+
+  std::string model = j["model"];
+
+  if(model.compare("lr") == 0) {
+    return LR::load(j);
+  } else {
+    return KNN::load(j);
+  }
 }
 
 KNN::KNN(const unsigned int _k, const unsigned int _d) {
@@ -151,10 +168,11 @@ void KNN::learn(const std::vector<std::pair<std::string, Features>> &inst) {
 }
 
 std::ostream& operator<<(std::ostream &strm, const KNN &o) {
-  strm << "KNN: {'k':"<<o.k<<"', 'd':"<<o.d<<", instances:['"<<std::endl;
-  for(auto i: o.instances) {
-    strm << "{'label':"<<i.first<<", 'features':"<<i.second<<"},"<<std::endl;
+  strm << "KNN: {'k':"<<o.k<<", 'd':"<<o.d<<", instances:['"<<std::endl;
+  for(size_t i = 0; i < o.instances.size() - 1; i++) {
+    strm << "{'label':"<<o.instances[i].first<<",'features':"<<o.instances[i].second<<"},"<<std::endl;
   }
+  strm << "{'label':"<<o.instances[o.instances.size() - 1].first<<",'features':"<<o.instances[o.instances.size() - 1].second<<"}"<<std::endl;
   strm << "]}";
   return strm;
 }
@@ -191,11 +209,6 @@ std::string KNN::predict(const Object &object) const {
 
   sort(distances.begin(), distances.end());
 
-  /*std::cout<<"Sorted Distances:"<<std::endl;
-  for(auto d: distances) {
-    std::cout<<d.first<<", "<<d.second<<std::endl;
-  }*/
-
   for(unsigned int i = 0; i < k; i++) {
     votes.push_back(distances[i].second);
   }
@@ -205,6 +218,7 @@ std::string KNN::predict(const Object &object) const {
 
 void KNN::store(const std::string &path) const {
   json j;
+  j["model"] = "knn";
   j["k"] = k;
   j["d"] = d;
   json inst;
@@ -224,16 +238,11 @@ void KNN::store(const std::string &path) const {
   }
   j["instances"] = inst;
 
-  //std::cout<<j.dump(2)<<std::endl;
   std::ofstream o(path);
   o << std::setw(2) << j << std::endl;
 }
 
-KNN KNN::load(const std::string &path) {
-  std::ifstream i(path);
-  json j;
-  i >> j;
-
+KNN& KNN::load(const json& j) {
   std::vector<std::pair<std::string, Features>> instances;
 
   for(auto i: j["instances"]) {
@@ -243,15 +252,16 @@ KNN KNN::load(const std::string &path) {
     double aspect_ratio = i["aspect_ratio"]; 
     double extent = i["extent"];
     
-    for(size_t j = 0; j < i["histogram"].size(); j++) {
-      hist[j] = i["histogram"][j];
+    for(size_t k = 0; k < i["histogram"].size(); k++) {
+      hist[k] = i["histogram"][k];
     }
     
     auto features = Features(hist, circularity, convex, aspect_ratio, extent);
     instances.push_back(std::pair(i["label"], features));
   }
 
-  return KNN(j["k"], j["d"], instances);
+  static KNN knn = KNN(j["k"], j["d"], instances);
+  return knn;
 }
 
 LR::LR() {
@@ -262,12 +272,12 @@ LR::LR(const std::vector<double> _parameters){
 }
 
 std::ostream& operator<<(std::ostream &strm, const LR &o) {
-  strm << "LR: {'weights':"; //<<o.parameters;
-  /*<<"', 'd':"<<o.d<<", instances:['"<<std::endl;
-  for(auto i: o.instances) {
-    strm << "{'label':"<<i.first<<", 'features':"<<i.second<<"},"<<std::endl;
-  }*/
-  strm << "}";
+  strm << "LR: {'weights':[";
+  for(size_t i = 0; i < o.parameters.size() - 1; i++) {
+    strm << o.parameters[i] <<", ";
+  } 
+  strm << o.parameters[o.parameters.size() - 1];
+  strm << "]}";
   return strm;
 }
 
@@ -305,8 +315,7 @@ const std::vector<double> &labels, const size_t m, const double beta) {
   return gradient;
 }
 
-void LR::learn(const std::vector<std::pair<std::string, Features>> &inst,
-const double alpha, const double beta) {
+void LR::learn(const std::vector<std::pair<std::string, Features>> &inst) {
   std::vector<double> labels;
   std::vector<std::vector<double>> features;
   for(size_t i = 0; i < inst.size(); i++) {
@@ -329,7 +338,8 @@ const double alpha, const double beta) {
     v_cap.push_back(0);
   }
 
-  double magnitude = 1.0, eps=1e-8, beta1=0.9, beta2=0.999;
+  const double alpha=0.01, beta=0.1, eps=1e-8, beta1=0.9, beta2=0.999;
+  double  magnitude = 1.0;
   size_t it = 0;
   while(magnitude > 0.001) {
     it++;
@@ -348,9 +358,6 @@ const double alpha, const double beta) {
     }
 
     magnitude = magnitude_vector(gradient);
-    if(it%10 == 0) {
-      std::cout << "GM = " << magnitude << std::endl;
-    }
   }
 }
 
@@ -360,8 +367,7 @@ std::string LR::predict(const Object &object) const {
   for(unsigned int j = 0; j < parameters.size(); j++) {
     p += features[j] * parameters[j];
   }
-  double pred = 1.0/(1.0+exp(-p));
-  std::cout<<"Pred = "<<pred<<std::endl;
+  double pred = sigmoid(p);
   if(pred > 0.5) {
     pred = 1.0;
   } else {
@@ -380,23 +386,20 @@ void LR::store(const std::string &path) const {
   for(auto p: parameters) {
     jpar.push_back(p);
   }
+  j["model"] = "lr";
   j["parameters"] = jpar;
 
-  //std::cout<<j.dump(2)<<std::endl;
   std::ofstream o(path);
   o << std::setw(2) << j << std::endl;
 }
 
-LR LR::load(const std::string &path) {
-  std::ifstream i(path);
-  json j;
-  i >> j;
-
+LR& LR::load(const json& j) {
   std::vector<double> parameters;
 
   for(auto p: j["parameters"]) {
     parameters.push_back(p);
   }
 
-  return LR(parameters);
+  static LR lr = LR(parameters);
+  return lr;
 }

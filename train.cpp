@@ -11,6 +11,7 @@ void print_help() {
     <<"usage: train [-p] [-k] [-i] [-o] [-h]"<<std::endl<<std::endl
     <<"Parameters:"<<std::endl
     <<"  -p, the preprocessig method               [default = 0]"<<std::endl
+    <<"  -m, ML model (0 - ARFF; 1 - KNN; 2 - LR)  [default = 0]"<<std::endl
     <<"  -k, the number of nearest neighbors       [default = 1]"<<std::endl
     <<"  -d, Minkowski distance of order p         [default = 2]"<<std::endl
     <<"  -i, the input folder with images to train [default = './resources/train/']"<<std::endl
@@ -21,7 +22,7 @@ void print_help() {
 
 int main(const int argc, const char** argv) {
   argh::parser cmdl;
-  cmdl.add_params({"-p", "-d", "-k", "-i", "-o"}); // batch pre-register multiple params: name + value
+  cmdl.add_params({"-p", "-m", "-d", "-k", "-i", "-o"}); // batch pre-register multiple params: name + value
   cmdl.parse(argc, argv);
 
   if (cmdl["-h"]) {
@@ -49,7 +50,6 @@ int main(const int argc, const char** argv) {
     cmdl("-k") >> value;
     k = std::atoi(value.c_str());
   }
-  std::cout<<"K = "<<k<<std::endl;
 
   unsigned int d = 2;
   if (cmdl("-d")) {
@@ -57,10 +57,7 @@ int main(const int argc, const char** argv) {
     cmdl("-d") >> value;
     d = std::atoi(value.c_str());
   }
-  std::cout<<"D = "<<d<<std::endl;
 
-  //auto model = KNN(k, d);
-  auto model = LR();
   auto classes = get_directories(input);
   std::vector<std::pair<std::string, Features>> instances;
   for (auto c: classes) {
@@ -84,25 +81,60 @@ int main(const int argc, const char** argv) {
     }
   }
 
-  /*for(auto i: instances) {
-    auto fe = i.second.get_features();
-    for (const auto& value: fe){
-      std::cout<< value << ", ";
-    }
-    std::cout << i.first << std::endl;
-  }*/
-
-  std::cout << "Model learning..." << std::endl;
-  model.learn(instances);
-
-  //std::cout<<model<<std::endl;
+  unsigned int m = 0;
+  if (cmdl("-m")) {
+    std::string value;
+    cmdl("-m") >> value;
+    m = std::atoi(value.c_str());
+  }
 
   std::string output = "./resources/model/model.json";
   if (cmdl("-o")) {
     cmdl("-o") >> output;
   }
   std::cout<<"Output: "<<output<<std::endl;
-  model.store(output);
+  
+  switch(m) {
+    case 0:
+      // output ARFF file...
+      std::cout<<"@RELATION mi"<<std::endl
+      <<"@ATTRIBUTE h0           NUMERIC"<<std::endl
+      <<"@ATTRIBUTE h1           NUMERIC"<<std::endl
+      <<"@ATTRIBUTE h2           NUMERIC"<<std::endl
+      <<"@ATTRIBUTE h3           NUMERIC"<<std::endl
+      <<"@ATTRIBUTE h4           NUMERIC"<<std::endl
+      <<"@ATTRIBUTE h5           NUMERIC"<<std::endl
+      <<"@ATTRIBUTE h6           NUMERIC"<<std::endl
+      <<"@ATTRIBUTE h7           NUMERIC"<<std::endl
+      <<"@ATTRIBUTE circularity  NUMERIC"<<std::endl
+      <<"@ATTRIBUTE convex       NUMERIC"<<std::endl
+      <<"@ATTRIBUTE aspect_ratio NUMERIC"<<std::endl
+      <<"@ATTRIBUTE extent       NUMERIC"<<std::endl
+      <<"@ATTRIBUTE class        {good, bad}"<<std::endl
+      <<"@DATA"<<std::endl;
+      for(auto i: instances) {
+        auto fe = i.second.get_features();
+        for (size_t j = 1; j < fe.size(); j++){
+          std::cout<< fe[j] << ", ";
+        }
+        std::cout << i.first << std::endl;
+      }
+      break;
+    case 1:{
+      auto model = KNN(k, d);
+      std::cout << "Model learning..." << std::endl;
+      model.learn(instances);
+      model.store(output);
+      std::cout<<model<<std::endl;
+      break;}
+    case 2:{
+      auto model = LR();
+      std::cout << "Model learning..." << std::endl;
+      model.learn(instances);
+      model.store(output);
+      std::cout<<model<<std::endl;
+      break;}
+  }
   
   return EXIT_SUCCESS;
 }
