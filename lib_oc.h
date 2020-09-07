@@ -22,13 +22,21 @@ class Features {
   private:
     std::array<double, 8> hist;
     double circularity;
+    bool convex;
+    double aspect_ratio;
+    double extent;
     friend std::ostream& operator<<(std::ostream&, const Features&);
 
   public:
-    Features(const std::array<double, 8> &, const double);
+    Features(const std::array<double, 8> &, const double, const bool, const double, const double);
     Features(const std::vector<cv::Point>&);
     double distance(const Features&, const unsigned int p=2) const;
-    std::pair<std::array<double, 8>,double> get_features() const;
+    std::vector<double> get_features() const;
+    std::array<double, 8> get_histogram() const;
+    double get_circularity() const;
+    bool get_convex() const;
+    double get_aspect_ratio() const;
+    double get_extent() const;
 };
 
 class KNN {
@@ -40,10 +48,23 @@ class KNN {
   public:
     KNN(const unsigned int, const unsigned int);
     KNN(const unsigned int, const unsigned int, const std::vector<std::pair<std::string, Features>>&);
-    void learn_class(const std::string&, const std::vector<Object>&);
+    void learn(const std::vector<std::pair<std::string, Features>>&);
     std::string predict(const Object&) const;
-    static void store(const KNN&, const std::string&);
+    void store(const std::string&) const;
     static KNN load(const std::string&);
+};
+
+class LR {
+  private:
+    std::vector<double> parameters;
+    friend std::ostream& operator<<(std::ostream&, const LR&);
+  public:
+    LR();
+    LR(const std::vector<double> parameters);
+    void learn(const std::vector<std::pair<std::string, Features>>&, const double alpha=0.01, const double beta=0.1);
+    std::string predict(const Object&) const;
+    void store(const std::string&) const;
+    static LR load(const std::string&);
 };
 
 #endif

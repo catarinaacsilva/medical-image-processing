@@ -41,6 +41,21 @@ void imfill(cv::Mat& src, cv::Mat& dst, cv::Point& seed) {
   dst = (edges_neg | src);
 }
 
+/*void watershed(cv::Mat& in, cv::Mat& out){
+  cv::Mat img, img_gray, markerMask;
+  in.copyTo(img);
+  cvtColor(img, markerMask, cv::COLOR_BGR2GRAY);
+  cvtColor(markerMask, imgGray, cv::COLOR_GRAY2BGR);
+  markerMask = cv::Scalar::all(0);
+
+  std::vector<std::vector<cv::Point>> contours;
+  std::vector<cv::Vec4i> hierarchy;
+  cv::findContours(markerMask, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_NONE);
+  cv::Mat markers(markerMask.size(), CV_32S);
+  markers = cv::Scalar::all(0);
+  watershed(img0, markers );
+  return img0;
+}*/
 
 void morphological_reconstruction(cv::Mat& in, cv::Mat& mask, cv::Mat& kernel, cv::Mat& out) {
   cv::Mat img_rec = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1),
@@ -103,15 +118,13 @@ std::pair<std::vector<Object>,cv::Mat>
 get_objects(const unsigned int pre, const std::string &path, const bool verbose) {
   auto originalImage = cv::imread(path, cv::IMREAD_UNCHANGED);
 
-  if(originalImage.empty())
-  {
+  if(originalImage.empty()) {
     // NOT SUCCESSFUL : the data attribute is empty
     std::cerr << "Image "<<path<<" could not be open..." << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  if(originalImage.channels() > 1)
-  {
+  if(originalImage.channels() > 1) {
     // Convert to a single-channel, intensity image
     cv::cvtColor(originalImage, originalImage, cv::COLOR_BGR2GRAY, 1);
   }
@@ -164,6 +177,11 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
     show_image(binary_image, "original");
   }
 
+  /*binary_image = watershed(binary_image);
+  if(verbose){
+    show_image(binary_image, "watershed");
+  }*/
+
   cv::morphologyEx(binary_image, smooth_image, cv::MORPH_ERODE, kernel_erode);
   if(verbose) {
     show_image(smooth_image, "erosao");
@@ -213,14 +231,12 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
 
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(edges, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
-  
 
   std::vector<Object> objects;
   for (size_t i = 0; i < contours.size(); i++) {
     objects.push_back(Object(contours[i]));
     //std::cout << objects[objects.size()-1] << std::endl;
   }
-
 
   if(verbose) {
     cv::destroyAllWindows();

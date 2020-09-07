@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -g -Wall -O2 -std=c++17 -pipe
+CFLAGS = -g -Wall -O2 -std=c++17 -pipe -march=native
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(SRCS))

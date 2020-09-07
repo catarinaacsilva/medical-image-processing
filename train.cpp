@@ -59,32 +59,50 @@ int main(const int argc, const char** argv) {
   }
   std::cout<<"D = "<<d<<std::endl;
 
-  auto model = KNN(k, d);
+  //auto model = KNN(k, d);
+  auto model = LR();
   auto classes = get_directories(input);
+  std::vector<std::pair<std::string, Features>> instances;
   for (auto c: classes) {
-    std::cout <<"Learn the following class: "<< c.filename().c_str() << std::endl;
+    const std::string label = c.filename().u8string();
+    std::cout << "Loading the following class: " << label << std::endl;
     auto files = get_files(c);
-    std::vector<Object> instances;
     for (auto f: files) {
       std::cout<<"File: "<<f<<std::endl;
       auto objects = (get_objects(pre, f, cmdl["-v"])).first;
-      auto object = *std::max_element(std::begin(objects), std::end(objects));
-      std::cout<<"Object = "<<object<<std::endl;
-      instances.push_back(object);
+      if (objects.size() > 0) {
+        auto object = *std::max_element(std::begin(objects), std::end(objects));
+        std::cout<<"Object = "<<object<<std::endl;
+        std::vector<cv::Point> contour = object.get_contour();
+        if(contour.size() > 0) {
+          auto features = Features(contour);
+          std::cout<<features<< std::endl;
+          std::pair<std::string, Features> p = std::make_pair(label, features);
+          instances.push_back(p);
+        }
+      }
     }
-    model.learn_class(c.filename().c_str(), instances);
   }
 
-  std::cout<<model<<std::endl;
+  /*for(auto i: instances) {
+    auto fe = i.second.get_features();
+    for (const auto& value: fe){
+      std::cout<< value << ", ";
+    }
+    std::cout << i.first << std::endl;
+  }*/
+
+  std::cout << "Model learning..." << std::endl;
+  model.learn(instances);
+
+  //std::cout<<model<<std::endl;
 
   std::string output = "./resources/model/model.json";
   if (cmdl("-o")) {
     cmdl("-o") >> output;
   }
   std::cout<<"Output: "<<output<<std::endl;
-  KNN::store(model, output);
-
-  //auto model2 = KNN::load(output);
-  //std::cout<<model2<<std::endl;
+  model.store(output);
+  
   return EXIT_SUCCESS;
 }

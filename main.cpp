@@ -45,7 +45,7 @@ int main(const int argc, const char** argv) {
     cmdl("-m") >> model_path;
   }
   std::cout<<"Model: "<<model_path<<std::endl;
-  auto model = KNN::load(model_path);
+  auto model = LR::load(model_path);
   std::cout<<model<<std::endl;
 
   auto files = get_files(input);
