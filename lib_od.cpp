@@ -41,34 +41,78 @@ void imfill(cv::Mat& src, cv::Mat& dst, cv::Point& seed) {
   dst = (edges_neg | src);
 }
 
-/*void watershed(cv::Mat& in, cv::Mat& out){
-  cv::Mat img, img_gray, markerMask;
-  in.copyTo(img);
-  cvtColor(img, markerMask, cv::COLOR_BGR2GRAY);
-  cvtColor(markerMask, imgGray, cv::COLOR_GRAY2BGR);
-  markerMask = cv::Scalar::all(0);
+cv::Mat watershed(cv::Mat &src, cv::Mat &smooth){
+  // Create a kernel that we will use to sharpen our image
+  cv::Mat kernel = (cv::Mat_<float>(3,3) <<
+  1,  1, 1,
+  1, -8, 1,
+  1,  1, 1);
+  // an approximation of second derivative, a quite strong kernel
 
+  cv::Mat imgLaplacian;
+  cv::filter2D(src, imgLaplacian, CV_32F, kernel);
+  cv::Mat sharp;
+  src.convertTo(sharp, CV_32F);
+  cv::Mat imgResult = sharp - imgLaplacian;
+  
+  // convert back to 8bits gray scale
+  imgResult.convertTo(imgResult, CV_8UC3);
+  show_image(imgResult, "Stuff...");
+  
+  // Perform the distance transform algorithm
+  cv::Mat dist;
+  cv::distanceTransform(smooth, dist, cv::DIST_L2, 3);
+      
+  // Normalize the distance image for range = {0.0, 1.0}
+  // so we can visualize and threshold it
+  cv::normalize(dist, dist, 0, 1.0, cv::NORM_MINMAX);
+  show_image(dist, "Distance Transform Image");
+  
+  // Threshold to obtain the peaks
+  // This will be the markers for the foreground objects
+  cv::threshold(dist, dist, 0.4, 1.0, cv::THRESH_BINARY);
+  
+  // Dilate a bit the dist image
+  cv::Mat kernel1 = cv::Mat::ones(3, 3, CV_8U);
+  cv::dilate(dist, dist, kernel1);
+
+  // Create the CV_8U version of the distance image
+  // It is needed for findContours()
+  cv::Mat dist_8u;
+  dist.convertTo(dist_8u, CV_8U);
+
+  // Find total markers
   std::vector<std::vector<cv::Point>> contours;
-  std::vector<cv::Vec4i> hierarchy;
-  cv::findContours(markerMask, contours, cv::RETR_CCOMP, cv::CHAIN_APPROX_NONE);
-  cv::Mat markers(markerMask.size(), CV_32S);
-  markers = cv::Scalar::all(0);
-  watershed(img0, markers );
-  return img0;
-}*/
+  cv::findContours(dist_8u, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+  // Create the marker image for the watershed algorithm
+  cv::Mat markers = cv::Mat::zeros(dist.size(), CV_32S);
+
+  // Perform the watershed algorithm
+  std::cout<<"SRC = "<<imgResult.type()<<"("<<CV_8UC3<<"/"<<CV_32F<<")"<<" DST = "<<markers.type()<<std::endl;
+  cv::watershed(imgResult, markers);
+
+  cv::Mat mark;
+  markers.convertTo(mark, CV_8U);
+  bitwise_not(mark, mark);
+  show_image(mark, "Markers");
+    //    imshow("Markers_v2", mark); // uncomment this if you want to see how the mark
+
+  return markers;
+}
 
 void morphological_reconstruction(cv::Mat& in, cv::Mat& mask, cv::Mat& kernel, cv::Mat& out) {
   cv::Mat img_rec = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1),
   img_dilate = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1);
   mask.copyTo(img_rec);
   bool eq = false;
-  do{
+  do {
     img_rec.copyTo(out(cv::Rect(0, 0, img_rec.size().width, img_rec.size().height)));
     cv::morphologyEx(out, img_dilate, cv::MORPH_DILATE, kernel);
     cv::min(in, img_dilate, img_rec);
     cv::Mat diff = img_rec != out;
     eq = cv::countNonZero(diff) == 0;
-  }while(!eq);
+  } while(!eq);
 }
 
 std::vector<unsigned char> chain(const std::vector<cv::Point> &contour) {
@@ -82,7 +126,7 @@ std::vector<unsigned char> chain(const std::vector<cv::Point> &contour) {
 }
 
 void show_images(const cv::Mat& im0, const cv::Mat& im1, const std::string &name) {
-  unsigned int width = im0.size().width + im1.size().width,
+  size_t width = im0.size().width + im1.size().width,
   height = std::max(im0.size().height, im1.size().height);
   cv::Mat canvas = cv::Mat::zeros(cv::Size(width, height), CV_8UC3);
   
@@ -124,17 +168,23 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
     exit(EXIT_FAILURE);
   }
 
+  // remove alpha channel
+  if(originalImage.channels() > 3) {
+    cv::cvtColor(originalImage, originalImage, cv::COLOR_RGBA2RGB);
+  }
+
+  cv::Mat bw;
   if(originalImage.channels() > 1) {
     // Convert to a single-channel, intensity image
-    cv::cvtColor(originalImage, originalImage, cv::COLOR_BGR2GRAY, 1);
+    cv::cvtColor(originalImage, bw, cv::COLOR_BGR2GRAY, 1);
   }
 
   if(verbose) {
-    show_image(originalImage, "Original image");
+    show_image(bw, "Original image");
   }
 
   cv::Mat smooth_image;
-  medianBlur(originalImage, smooth_image, 9);
+  medianBlur(bw, smooth_image, 9);
 
   if(verbose) {
     show_image(smooth_image, "Averaging Filter 9 x 9 - 1 Iter");
@@ -147,7 +197,7 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
 
   cv::bitwise_not(binary_image, binary_image);
   if(verbose) {
-    show_image(binary_image, "Threshold Otsu");
+    show_image(binary_image, "Threshold Image");
   }
 
   //vários kernel para teste!
@@ -174,7 +224,7 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
   // fill some parts of original image
   imfill(binary_image, binary_image); 
   if(verbose){
-    show_image(binary_image, "original");
+    show_image(binary_image, "Fill Holes (imfill)");
   }
 
   /*binary_image = watershed(binary_image);
@@ -184,12 +234,12 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
 
   cv::morphologyEx(binary_image, smooth_image, cv::MORPH_ERODE, kernel_erode);
   if(verbose) {
-    show_image(smooth_image, "erosao");
+    show_image(smooth_image, "Erosion");
   }
 
   morphological_reconstruction(binary_image, smooth_image, kernel_rec, smooth_image);
   if(verbose) {
-    show_image(smooth_image, "morph rec");
+    show_image(smooth_image, "Morphological Reconstruction");
   }
 
   /*cv::morphologyEx(smooth_image, smooth_image, cv::MORPH_CLOSE, kernel_close_2);
@@ -217,8 +267,37 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
     case 1:
       cv::morphologyEx(smooth_image, edges, cv::MORPH_GRADIENT, kernel);
       if(verbose) {
-        show_image(edges, "Morph GRADIENT");
+        show_image(edges, "Morphological Gradient");
       }
+    break;
+    case 2:{
+      cv::Mat markers = watershed(originalImage, smooth_image);
+      double min, max;
+      std::cout<<"("<<min<<"; "<<max<<")"<<std::endl;
+      cv::minMaxLoc(markers, &min, &max);
+      std::vector<cv::Vec3b> colors;
+      for (size_t i = 0; i < max; i++)
+      {
+        int b = cv::theRNG().uniform(0, 256);
+        int g = cv::theRNG().uniform(0, 256);
+        int r = cv::theRNG().uniform(0, 256);
+        colors.push_back(cv::Vec3b((uchar)b, (uchar)g, (uchar)r));
+      }
+      // Create the result image
+      cv::Mat dst = cv::Mat::zeros(markers.size(), CV_8UC3);
+      // Fill labeled objects with random colors
+      for (int i = 0; i < markers.rows; i++) {
+        for (int j = 0; j < markers.cols; j++) {
+          int index = markers.at<int>(i,j);
+          if (index > 0 && index <= static_cast<int>(max)) {
+                dst.at<cv::Vec3b>(i,j) = colors[index-1];
+            }
+        }
+      }
+      if(verbose) {
+        show_image(edges, "Watershed");
+      }
+    }
     break;
     default:
       low_thresh = high_thresh / 2;
@@ -242,7 +321,7 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
     cv::destroyAllWindows();
   }
 
-  return std::pair(objects, originalImage);
+  return std::pair(objects, bw);
 }
 
 Object::Object(std::vector<cv::Point> &_contour) {

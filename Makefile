@@ -9,7 +9,10 @@ LIBS = $(OPENCV)
 
 .PHONY: all clean
 
-all: main train
+all: main train watershed
+
+watershed: watershed.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 main: main.o lib_od.o lib_oc.o lib_fs.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
