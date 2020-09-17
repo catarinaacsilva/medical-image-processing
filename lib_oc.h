@@ -21,22 +21,19 @@ using json = nlohmann::json;
 class Features {
   private:
     std::array<double, 8> hist;
-    double circularity;
-    bool convex;
-    double aspect_ratio;
-    double extent;
+    double circularity, roundness, aspect_ratio, solidity;
     friend std::ostream& operator<<(std::ostream&, const Features&);
 
   public:
-    Features(const std::array<double, 8> &, const double, const bool, const double, const double);
+    Features(const std::array<double, 8> &, const double, const double, const double, const double);
     Features(const std::vector<cv::Point>&);
     double distance(const Features&, const unsigned int p=2) const;
     std::vector<double> get_features() const;
     std::array<double, 8> get_histogram() const;
     double get_circularity() const;
-    bool get_convex() const;
+    double get_roundness() const;
     double get_aspect_ratio() const;
-    double get_extent() const;
+    double get_solidity() const;
 };
 
 class ML {

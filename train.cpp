@@ -107,9 +107,9 @@ int main(const int argc, const char** argv) {
       <<"@ATTRIBUTE h6           NUMERIC"<<std::endl
       <<"@ATTRIBUTE h7           NUMERIC"<<std::endl
       <<"@ATTRIBUTE circularity  NUMERIC"<<std::endl
-      <<"@ATTRIBUTE convex       NUMERIC"<<std::endl
+      <<"@ATTRIBUTE roundness    NUMERIC"<<std::endl
       <<"@ATTRIBUTE aspect_ratio NUMERIC"<<std::endl
-      <<"@ATTRIBUTE extent       NUMERIC"<<std::endl
+      <<"@ATTRIBUTE solidity     NUMERIC"<<std::endl
       <<"@ATTRIBUTE class        {good, bad}"<<std::endl
       <<"@DATA"<<std::endl;
       for(auto i: instances) {

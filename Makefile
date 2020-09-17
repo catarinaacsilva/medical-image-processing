@@ -27,4 +27,4 @@ docs: %.cpp %.h %.hpp Doxyfile
 	doxygen Doxyfile
 
 clean:
-	rm -rf main train *.o documentation
+	rm -rf main train watershed *.o documentation

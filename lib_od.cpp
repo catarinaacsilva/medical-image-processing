@@ -101,15 +101,15 @@ cv::Mat watershed(cv::Mat &src, cv::Mat &smooth){
   return markers;
 }
 
-void morphological_reconstruction(cv::Mat& in, cv::Mat& mask, cv::Mat& kernel, cv::Mat& out) {
-  cv::Mat img_rec = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1),
-  img_dilate = cv::Mat::zeros(cv::Size(mask.size().width, mask.size().height), CV_8UC1);
-  mask.copyTo(img_rec);
+void morphological_reconstruction(cv::Mat& mask, cv::Mat& marker, cv::Mat& kernel, cv::Mat& out) {
+  cv::Mat img_rec = cv::Mat::zeros(cv::Size(marker.size().width, marker.size().height), CV_8UC1),
+  img_dilate = cv::Mat::zeros(cv::Size(marker.size().width, marker.size().height), CV_8UC1);
+  marker.copyTo(img_rec);
   bool eq = false;
   do {
     img_rec.copyTo(out(cv::Rect(0, 0, img_rec.size().width, img_rec.size().height)));
     cv::morphologyEx(out, img_dilate, cv::MORPH_DILATE, kernel);
-    cv::min(in, img_dilate, img_rec);
+    cv::min(mask, img_dilate, img_rec);
     cv::Mat diff = img_rec != out;
     eq = cv::countNonZero(diff) == 0;
   } while(!eq);
@@ -233,10 +233,6 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
   }*/
 
   cv::morphologyEx(binary_image, smooth_image, cv::MORPH_ERODE, kernel_erode);
-  if(verbose) {
-    show_image(smooth_image, "Erosion");
-  }
-
   morphological_reconstruction(binary_image, smooth_image, kernel_rec, smooth_image);
   if(verbose) {
     show_image(smooth_image, "Morphological Reconstruction");
@@ -246,7 +242,6 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
   if(verbose) {
     show_image(smooth_image, "close");
   }*/
-
 
   // After binarization is necessary reduce noise, again
   /*medianBlur(smooth_image, smooth_image, 9);
@@ -261,6 +256,7 @@ get_objects(const unsigned int pre, const std::string &path, const bool verbose)
       low_thresh = high_thresh / 2;
       cv::Canny(smooth_image, edges, low_thresh, high_thresh);
       if(verbose) {
+        //show_images(smooth_image, edges, "Canny");
         show_image(edges, "Canny");
       }
     break;

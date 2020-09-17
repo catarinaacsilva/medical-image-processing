@@ -5,22 +5,6 @@ The first simple implementation follows the method described in the following [p
 Actually, the code is being improved to a more complete aproach to detect and classify these abnormal cells, to produce results more precious.
 
 
-[comment]: <> (A simple implementation of a image processing pipeline capable of identifiyng Acanthocytosis.)
-[comment]: <> (The first implementation follows the method described in the following [paper](http://www.laccei.org/LACCEI2018-Lima/student_Papers/SP531.pdf).)
-
-[comment]: <> (The pre-processing pipeline apply the following filters:)
-
-[comment]: <> (1. Converts colors images to gray scale)
-[comment]: <> (2. Applys a median blur filter with size 9x9)
-[comment]: <> (3. Converts the image to binary scale using Otsu method)
-[comment]: <> (4. Applies morphological open and close operations (ELLIPSE shape with size 9x9))
-[comment]: <> (5. Re-applies the median blur filter)
-[comment]: <> (6. Segments the image with Canny edge detector or morphological gradient)
-
-[comment]: <> (After that, it uses a find contour method to segment the image into objects.)
-[comment]: <> (Finally, each object is classified using a kNN algorithm.)
-[comment]: <> (The kNN algorithm uses chain code histogram and the circularity value as features.)
-
 ## Requirements
 
 The code requires the following libraries:

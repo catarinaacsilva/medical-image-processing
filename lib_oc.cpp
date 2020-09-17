@@ -21,21 +21,13 @@ double sigmoid(const double x) {
   return 1.0/(1.0+exp(-x));
 }
 
-double dot_product(const std::vector<double> a0, const std::vector<double> a1) {
-  double res = 0.0;
-  for(size_t i = 0; i < a0.size(); i++) {
-    res += a0[i] * a1[i];
-  }
-  return res;
-}
-
 Features::Features(const std::array<double, 8> &_hist, const double _circularity,
-const bool _convex, const double _aspect_ratio, const double _extent) {
+const double _roundness, const double _aspect_ratio, const double _solidity) {
   hist = _hist;
   circularity = _circularity;
-  convex = _convex;
+  roundness = _roundness;
   aspect_ratio = _aspect_ratio;
-  extent = _extent;
+  solidity = _solidity;
 }
 
 Features::Features(const std::vector<cv::Point>& contour) {
@@ -52,15 +44,18 @@ Features::Features(const std::vector<cv::Point>& contour) {
     }
   }
 
-  auto bb = cv::boundingRect(contour);
+  std::vector<cv::Point> hull;
+  cv::convexHull(contour, hull);
+  auto rbb = cv::fitEllipse(contour);
   double area = cv::contourArea(contour),
   perimeter = cv::arcLength(contour, true),
-  width = bb.width, height = bb.height;
-
+  major_axis = std::max(rbb.size.width, rbb.size.height),
+  minor_axis = std::min(rbb.size.width, rbb.size.height);
+  
   circularity = (4.0*M_PI*area)/pow(perimeter, 2);
-  convex = cv::isContourConvex(contour);
-  aspect_ratio = width / height;
-  extent = area / (width * height);
+  roundness = (4.0*area)/(M_PI*pow(major_axis,2));
+  aspect_ratio = major_axis / minor_axis;
+  solidity = area / cv::contourArea(hull);
 }
 
 double Features::distance(const Features& other, const unsigned int d) const {
@@ -96,9 +91,9 @@ std::vector<double> Features::get_features() const {
     res.push_back(h);
   }
   res.push_back(circularity);
-  res.push_back(convex);
+  res.push_back(roundness);
   res.push_back(aspect_ratio);
-  res.push_back(extent); 
+  res.push_back(solidity); 
   return res;
 }
 
@@ -110,21 +105,21 @@ double Features::get_circularity() const {
   return circularity;
 }
 
-bool Features::get_convex() const {
-  return convex;
+double Features::get_roundness() const {
+  return roundness;
 }
 
 double Features::get_aspect_ratio() const {
   return aspect_ratio;
 }
 
-double Features::get_extent() const {
-  return extent;
+double Features::get_solidity() const {
+  return solidity;
 }
 
 std::ostream& operator<<(std::ostream &strm, const Features &o) {
-  strm << "{'convex':"<<o.convex<<",'circularity':"<<o.circularity<<
-  ",'aspect_ratio':"<<o.aspect_ratio<<",'extent':"<<o.extent<<",'h':[";
+  strm << "{'circularity':"<<o.circularity<<",'roundness':"<<o.roundness<<
+  ",'aspect_ratio':"<<o.aspect_ratio<<",'solidity':"<<o.solidity<<",'h':[";
   for(size_t i = 0; i < o.hist.size(); ++i) {
     strm << std::fixed << std:: setprecision(2) << o.hist[i];
     if (i != o.hist.size() - 1) {
@@ -226,9 +221,9 @@ void KNN::store(const std::string &path) const {
     json instance;
     instance["label"] = i.first;
     instance["circularity"] = i.second.get_circularity();
-    instance["convex"] = i.second.get_convex();
+    instance["roundness"] = i.second.get_roundness();
     instance["aspect_ratio"] = i.second.get_aspect_ratio();
-    instance["extent"] = i.second.get_extent();
+    instance["solidity"] = i.second.get_solidity();
     json histogram;
     for(auto h: i.second.get_histogram()) {
       histogram.push_back(h);
@@ -248,15 +243,15 @@ KNN& KNN::load(const json& j) {
   for(auto i: j["instances"]) {
     std::array<double, 8> hist;
     double circularity = i["circularity"];
-    bool convex = i["convex"];
+    double roundness = i["roundness"];
     double aspect_ratio = i["aspect_ratio"]; 
-    double extent = i["extent"];
+    double solidity = i["solidity"];
     
     for(size_t k = 0; k < i["histogram"].size(); k++) {
       hist[k] = i["histogram"][k];
     }
     
-    auto features = Features(hist, circularity, convex, aspect_ratio, extent);
+    auto features = Features(hist, circularity, roundness, aspect_ratio, solidity);
     instances.push_back(std::pair(i["label"], features));
   }
 
