@@ -4,6 +4,36 @@ An implementation of an image processing pipeline and using machine learning alg
 The first simple implementation follows the method described in the following [paper](http://www.laccei.org/LACCEI2018-Lima/student_Papers/SP531.pdf).
 Actually, the code is being improved to a more complete aproach to detect and classify these abnormal cells, to produce results more precious.
 
+The pre-processing pipeline apply the following steps:
+
+1. Convert image to gray scale
+2. Apply 9x9 median filter to remove noise
+3. Convert to binary using Otsu thresholding method
+4. Filling operation to remove holes
+5. Apply morphological reconstruction (elliptic shaped 9x9 kernel) to remove remove the medium-sized noise
+6. Finally, canny edge detector is to apply to extract region contours
+
+Features extracted:
+
+1. Histogram from the chain code
+2. Circularity
+3. Roundness
+4. Aspect-ratio
+5. Solidity
+
+Algorithms implemented:
+
+1. kNN
+2. Linear Regresion
+
+Other algorithms used to compare results (future implementation):
+
+1. Naive Bayes
+2. Decision Tree
+3. Random Forest
+4. Support Vector Machine
+5. Neural Network
+
 
 ## Requirements
 
@@ -54,6 +84,7 @@ usage: train [-p] [-k] [-i] [-o] [-h]
 
 Parameters:
   -p, the preprocessig method               [default = 0]
+  -m, ML model (0 - ARFF; 1 - KNN; 2 - LR)  [default = 0]
   -k, the number of nearest neighbors       [default = 1]
   -d, Minkowski distance of order p         [default = 2]
   -i, the input folder with images to train [default = './resources/train/']
