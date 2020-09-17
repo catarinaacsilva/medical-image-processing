@@ -1,20 +1,25 @@
 # Medical Image Processing
 
-A simple implementation of a image processing pipeline capable of identifiyng Acanthocytosis.
-The implemenation follows the method described in the following [paper](http://www.laccei.org/LACCEI2018-Lima/student_Papers/SP531.pdf).
+An implementation of an image processing pipeline and using machine learning algorithims capable of identify acanthocytes on blood.
+The first simple implementation follows the method described in the following [paper](http://www.laccei.org/LACCEI2018-Lima/student_Papers/SP531.pdf).
+Actually, the code is being improved to a more complete aproach to detect and classify these abnormal cells, to produce results more precious.
 
-The pre-processing pipeline apply the following filters:
 
-1. Converts colors images to gray scale
-2. Applys a median blur filter with size 9x9
-3. Converts the image to binary scale using Otsu method
-4. Applies morphological open and close operations (ELLIPSE shape with size 9x9)
-5. Re-applies the median blur filter
-6. Segments the image with Canny edge detector or morphological gradient
+[comment]: <> (A simple implementation of a image processing pipeline capable of identifiyng Acanthocytosis.)
+[comment]: <> (The first implementation follows the method described in the following [paper](http://www.laccei.org/LACCEI2018-Lima/student_Papers/SP531.pdf).)
 
-After that, it uses a find contour method to segment the image into objects.
-Finally, each object is classified using a kNN algorithm.
-The kNN algorithm uses chain code histogram and the circularity value as features.
+[comment]: <> (The pre-processing pipeline apply the following filters:)
+
+[comment]: <> (1. Converts colors images to gray scale)
+[comment]: <> (2. Applys a median blur filter with size 9x9)
+[comment]: <> (3. Converts the image to binary scale using Otsu method)
+[comment]: <> (4. Applies morphological open and close operations (ELLIPSE shape with size 9x9))
+[comment]: <> (5. Re-applies the median blur filter)
+[comment]: <> (6. Segments the image with Canny edge detector or morphological gradient)
+
+[comment]: <> (After that, it uses a find contour method to segment the image into objects.)
+[comment]: <> (Finally, each object is classified using a kNN algorithm.)
+[comment]: <> (The kNN algorithm uses chain code histogram and the circularity value as features.)
 
 ## Requirements
 
@@ -89,6 +94,7 @@ Parameters:
 ## Authors
 
 * **Catarina Silva** - [catarinaacsilva](https://github.com/catarinaacsilva)
+
 
 ## License
 
