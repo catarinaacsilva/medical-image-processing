@@ -3,11 +3,12 @@
  * @brief Object Classification library
  *
  * Functions used to classify objects based on their shape.
- * The code uses chain code histograms and a kNN algorithm to classify objects.
+ * The code uses chain code histograms and features such as solidity, circularity and aspect ratio.
+ * Also, the code uses a kNN and logistic regression algorithms to classify objects.
  *
  * @author $Author: Catarina Silva $
  * @version $Revision: 1.0 $
- * @date $Date: 2020/01/05 $
+ * @date $Date: 2020/09/10 $
  */
 
 #ifndef OC_H
