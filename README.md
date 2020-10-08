@@ -24,7 +24,7 @@ Features extracted:
 Algorithms implemented:
 
 1. kNN
-2. Linear Regresion
+2. Logistic Regression
 
 Other algorithms used to compare results (future implementation):
 

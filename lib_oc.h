@@ -18,6 +18,10 @@
 
 using json = nlohmann::json;
 
+/**
+ * Features extraction class to obtain the following features: circularity, roundness, aspect ratio and solidity
+ *
+ */
 class Features {
   private:
     std::array<double, 8> hist;
@@ -47,6 +51,10 @@ class ML {
     friend std::ostream& operator<<(std::ostream&, const ML&);
 };
 
+/**
+ * A kNN implementation class
+ *
+ */
 class KNN : public ML {
   private:
     unsigned int k, d;
@@ -64,6 +72,10 @@ class KNN : public ML {
     static KNN& load(const json&);
 };
 
+/**
+ * A Logistic Regression implementation class
+ *
+ */
 class LR : public ML {
   private:
     std::vector<double> parameters;
