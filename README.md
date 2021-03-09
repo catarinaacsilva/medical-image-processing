@@ -34,6 +34,8 @@ Other algorithms used to compare results (future implementation):
 4. Support Vector Machine
 5. Neural Network
 
+The published paper is available on this [link](https://www.researchgate.net/profile/Catarina_Silva45/publication/345003926_Classifying_acanthocytes_using_image_processing_and_ML_techniques_A_comparative_study/links/5f9bf690a6fdccfd7b8a89d4/Classifying-acanthocytes-using-image-processing-and-ML-techniques-A-comparative-study.pdf)
+
 
 ## Requirements
 
